@@ -95,3 +95,8 @@ slope = ee.Terrain.slope(dem)
 dataset = ee.ImageCollection('UCSB-CHG/CHIRPS/PENTAD')
                   .filter(season)
 precipitation = dataset.select('precipitation').sum()
+
+# Composite preprocessed Data
+composite = ee.Image.cat([(s2median),(s1mean),(s1monthly),(ndvi),(savi),(ndre),(slope),(precipitation)]);
+
+sentinel_vi = composite.clip(jedeb)
