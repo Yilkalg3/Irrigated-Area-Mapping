@@ -85,3 +85,13 @@ s1monthly = s1Nov.addBands(s1Dec)\
                  .addBands(s1May)
 
 #print(s1monthly.getInfo())
+
+# Vegetation Indices 
+
+# Auxillary Data 
+dem = ee.Image("NASA/NASADEM_HGT/001").select('elevation')
+slope = ee.Terrain.slope(dem);
+
+dataset = ee.ImageCollection('UCSB-CHG/CHIRPS/PENTAD')
+                  .filter(season);
+precipitation = dataset.select('precipitation').sum();
