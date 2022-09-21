@@ -156,8 +156,34 @@ ndvi = ndviNov.addBands(ndviDec)\
 
 Map.addLayer(ndvi, {}, 'NDVI', False)
 
+# Soil Adjusted Vegetation Index (SAVI)
+def getSAVI(image):
+    SAVI = image.expression(
+        '(NIR - RED) / (NIR + RED + L) * (1.0 + L)', {
+            'NIR': image.select('B8'),
+            'RED': image.select('B4'),
+            'L': 0.428
+        }).rename("SAVI")
 
-def getSAVI
+    image = image.addBands(SAVI)
+
+    return(image)
+
+# using monthly median reflectance
+saviNov = sentinel2nov.map(getSAVI).mean().clip(jedeb).select('SAVI').rename('saviNov')
+saviDec = sentinel2dec.map(getSAVI).mean().clip(jedeb).select('SAVI').rename('saviDec')
+saviJan = sentinel2jan.map(getSAVI).mean().clip(jedeb).select('SAVI').rename('saviJan')
+saviFeb = sentinel2feb.map(getSAVI).mean().clip(jedeb).select('SAVI').rename('saviFeb')
+saviMar = sentinel2mar.map(getSAVI).mean().clip(jedeb).select('SAVI').rename('saviMar')
+saviApr = sentinel2apr.map(getSAVI).mean().clip(jedeb).select('SAVI').rename('saviApr')
+saviMay = sentinel2apr.map(getSAVI).mean().clip(jedeb).select('SAVI').rename('saviMay')
+
+savi = saviNov.addBands(saviDec)\
+                 .addBands(saviJan)\
+                 .addBands(saviFeb)\
+                 .addBands(saviMar)\
+                 .addBands(saviApr)\
+                 .addBands(saviMay)
 
 def getNDRE
 # Auxillary Data 
