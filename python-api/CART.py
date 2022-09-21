@@ -87,7 +87,79 @@ s1monthly = s1Nov.addBands(s1Dec)\
 #print(s1monthly.getInfo())
 
 # Vegetation Indices 
+# NDVI 
+# Calculate NDVI
+def getNDVI(image):
+    # Compute the NDVI using an expression.
+    NDVI = image.normalizedDifference(['B8', 'B4']).rename("NDVI")
 
+    image = image.addBands(NDVI)
+
+    return(image)
+
+# using monthly median reflectance
+sentinel2nov = ee.ImageCollection('COPERNICUS/S2_SR')\
+    .filterBounds(jedeb)\
+    .filterDate("2021-1-01","2021-11-30")\
+    .filter(ee.Filter.lt('CLOUDY_PIXEL_PERCENTAGE',20))\
+    .map(maskS2clouds)
+ndviNov = sentinel2nov.map(getNDVI).mean().clip(jedeb).select('NDVI').rename('ndviNov')
+# ---------------
+sentinel2dec = ee.ImageCollection('COPERNICUS/S2_SR')\
+    .filterBounds(jedeb)\
+    .filterDate("2021-12-01","2021-12-31")\
+    .filter(ee.Filter.lt('CLOUDY_PIXEL_PERCENTAGE',20))\
+    .map(maskS2clouds)
+ndviDec = sentinel2dec.map(getNDVI).mean().clip(jedeb).select('NDVI').rename('ndviDec')
+# ---------------
+sentinel2jan = ee.ImageCollection('COPERNICUS/S2_SR')\
+    .filterBounds(jedeb)\
+    .filterDate("2022-01-01","2022-01-31")\
+    .filter(ee.Filter.lt('CLOUDY_PIXEL_PERCENTAGE',20))\
+    .map(maskS2clouds)
+ndviJan = sentinel2jan.map(getNDVI).mean().clip(jedeb).select('NDVI').rename('ndviJan')
+# ---------------
+sentinel2feb = ee.ImageCollection('COPERNICUS/S2_SR')\
+    .filterBounds(jedeb)\
+    .filterDate("2022-02-01","2022-02-28")\
+    .filter(ee.Filter.lt('CLOUDY_PIXEL_PERCENTAGE',20))\
+    .map(maskS2clouds)
+ndviFeb = sentinel2feb.map(getNDVI).mean().clip(jedeb).select('NDVI').rename('ndviFeb')
+# ---------------
+sentinel2mar = ee.ImageCollection('COPERNICUS/S2_SR')\
+    .filterBounds(jedeb)\
+    .filterDate("2022-03-01","2022-03-31")\
+    .filter(ee.Filter.lt('CLOUDY_PIXEL_PERCENTAGE',20))\
+    .map(maskS2clouds)
+ndviMar = sentinel2mar.map(getNDVI).mean().clip(jedeb).select('NDVI').rename('ndviMar')
+# ---------------
+sentinel2apr = ee.ImageCollection('COPERNICUS/S2_SR')\
+    .filterBounds(jedeb)\
+    .filterDate("2022-04-01","2022-04-30")\
+    .filter(ee.Filter.lt('CLOUDY_PIXEL_PERCENTAGE',20))\
+    .map(maskS2clouds)
+ndviApr = sentinel2apr.map(getNDVI).mean().clip(jedeb).select('NDVI').rename('ndviApr')
+# ---------------
+sentinel2may = ee.ImageCollection('COPERNICUS/S2_SR')\
+    .filterBounds(jedeb)\
+    .filterDate("2022-05-01","2022-04-30")\
+    .filter(ee.Filter.lt('CLOUDY_PIXEL_PERCENTAGE',20))\
+    .map(maskS2clouds)
+ndviMay = sentinel2apr.map(getNDVI).mean().clip(jedeb).select('NDVI').rename('ndviMay')
+# ---------------
+ndvi = ndviNov.addBands(ndviDec)\
+                 .addBands(ndviJan)\
+                 .addBands(ndviFeb)\
+                 .addBands(ndviMar)\
+                 .addBands(ndviApr)\
+                 .addBands(ndviMay)
+
+Map.addLayer(ndvi, {}, 'NDVI', False)
+
+
+def getSAVI
+
+def getNDRE
 # Auxillary Data 
 dem = ee.Image("NASA/NASADEM_HGT/001").select('elevation')
 slope = ee.Terrain.slope(dem)
