@@ -90,8 +90,8 @@ s1monthly = s1Nov.addBands(s1Dec)\
 
 # Auxillary Data 
 dem = ee.Image("NASA/NASADEM_HGT/001").select('elevation')
-slope = ee.Terrain.slope(dem);
+slope = ee.Terrain.slope(dem)
 
 dataset = ee.ImageCollection('UCSB-CHG/CHIRPS/PENTAD')
-                  .filter(season);
-precipitation = dataset.select('precipitation').sum();
+                  .filter(season)
+precipitation = dataset.select('precipitation').sum()
