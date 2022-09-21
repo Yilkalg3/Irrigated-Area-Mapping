@@ -1,3 +1,7 @@
+var jedeb = ee.FeatureCollection("projects/ee-yilkalgebeyehu/assets/Jedeb_Watershed");
+var trainingGcp = ee.FeatureCollection("projects/ee-yilkalgebeyehu/assets/Training");
+var validationGcp = ee.FeatureCollection("projects/ee-yilkalgebeyehu/assets/Validation");
+
 // Set Dates 
 var start = '2021-12-01';
 var end = '2022-04-30';
