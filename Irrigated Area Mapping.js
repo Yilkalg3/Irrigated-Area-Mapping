@@ -1,3 +1,11 @@
+var jedeb = ee.FeatureCollection("projects/ee-yilkalgebeyehu/assets/Jedeb_Watershed"),
+    trainingGcp = ee.FeatureCollection("projects/ee-yilkalgebeyehu/assets/Training"),
+    validationGcp = ee.FeatureCollection("projects/ee-yilkalgebeyehu/assets/Validation"),
+    degaTraining = ee.FeatureCollection("projects/ee-yilkalgebeyehu/assets/Samples/Dega_Training"),
+    degaValidation = ee.FeatureCollection("projects/ee-yilkalgebeyehu/assets/Samples/Dega_Validation"),
+    wdegaTraining = ee.FeatureCollection("projects/ee-yilkalgebeyehu/assets/Samples/WD_Training"),
+    wdegaValidation = ee.FeatureCollection("projects/ee-yilkalgebeyehu/assets/Samples/WD_Validation");
+
 // Set Dates - based on irrigation season
 var start = '2021-12-01';
 var end = '2022-04-30';
