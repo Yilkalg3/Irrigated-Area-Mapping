@@ -1,7 +1,3 @@
-var jedeb = ee.FeatureCollection("projects/ee-yilkalgebeyehu/assets/Jedeb_Watershed"),
-    trainingGcp = ee.FeatureCollection("projects/ee-yilkalgebeyehu/assets/Training"),
-    validationGcp = ee.FeatureCollection("projects/ee-yilkalgebeyehu/assets/Validation");
-
 // Set Dates - based on irrigation season
 var start = '2021-12-01';
 var end = '2022-04-30';
@@ -416,11 +412,11 @@ var s2visualization = {
 };
 
 Map.setCenter(37.61, 10.5009, 10);
-Map.addLayer(s2median, s2visualization, 'RGB');
-Map.addLayer(CART, {'palette': Palette, 'min': 1, 'max': 7}, 'CART');
-Map.addLayer(GTB, {'palette': Palette, 'min': 1, 'max': 7}, 'GTB');
-Map.addLayer(RF, {'palette': Palette, 'min': 1, 'max': 7}, 'RF');
-Map.addLayer(SVM, {'palette': Palette, 'min': 1, 'max': 7}, 'SVM');
+Map.addLayer(s2median, s2visualization, 'RGB',false);
+Map.addLayer(CART, {'palette': Palette, 'min': 1, 'max': 7}, 'CART', false);
+Map.addLayer(GTB, {'palette': Palette, 'min': 1, 'max': 7}, 'GTB', false);
+Map.addLayer(RF, {'palette': Palette, 'min': 1, 'max': 7}, 'RF', false);
+Map.addLayer(SVM, {'palette': Palette, 'min': 1, 'max': 7}, 'SVM', false);
 
 // Calculate Statistics 
 print('Irrigation Area (ha)');
@@ -476,6 +472,34 @@ var area = areaImage.reduceRegion({
 var IrrigationAreaha = ee.Number(area.get('classification')).divide(1e4).round();
 print('SVM', IrrigationAreaha);
 
+// Importance in Percent (out of 100)
+// CART
+var importance = ee.Dictionary(CART_classifier.explain().get('importance'));
+var totalImportance = importance.values().reduce(ee.Reducer.sum());
+var importancePercentage = importance.map(function(band, importance) {
+    return ee.Number(importance).divide(totalImportance).multiply(100);
+});
+
+print('CART Importance (%)', importancePercentage);
+
+// GTB
+var importance = ee.Dictionary(GTB_classifier.explain().get('importance'));
+var totalImportance = importance.values().reduce(ee.Reducer.sum());
+var importancePercentage = importance.map(function(band, importance) {
+    return ee.Number(importance).divide(totalImportance).multiply(100);
+});
+
+print('GTB Importance (%)', importancePercentage);
+
+// RF
+var importance = ee.Dictionary(RF_classifier.explain().get('importance'));
+var totalImportance = importance.values().reduce(ee.Reducer.sum());
+var importancePercentage = importance.map(function(band, importance) {
+    return ee.Number(importance).divide(totalImportance).multiply(100);
+});
+
+print('RF Importance (%)', importancePercentage);
+
 // Plot the importance of each band in a bar plot
 var dict_featImportance = RF_classifier.explain();
 var variable_importance = ee.Feature(null, ee.Dictionary(dict_featImportance).get('importance'));
@@ -496,3 +520,225 @@ Export.image.toDrive({
   description: 'CART_2014',
   region: jedeb
 });
+
+
+// Based on Agroecology
+// 1. Woyna Dega
+// Overlay the points on the imagery to get training.
+var sample = sentinel_vi.sampleRegions(
+    {'collection': wdegaTraining, 'properties': [label], 'scale': 10}
+);
+
+// CART Classification 
+var CART_classifier = ee.Classifier.smileCart(40).train(sample, label, bands);
+// Get information about the trained classifier.
+print('Woyna Dega CART_Explanation', CART_classifier.explain());
+
+// Classify the image with the same bands used for training.
+var CART = sentinel_vi.classify(CART_classifier);
+
+// Accuracy Assessment 
+var band = 'classification';
+// Overlay the points on the imagery to get training.
+var test = CART.select(band).sampleRegions(
+    {'collection': validationGcp, 'properties':[label],'scale': 10}
+);
+
+var test_accuracy = test.errorMatrix('Cover', 'classification');
+print('Woyna Dega CART Confusion Matrix', test_accuracy);
+
+print('Woyna Dega CART Overall Accuracy', test_accuracy.accuracy());
+
+print('Woyna Dega CART Kappa', test_accuracy.kappa());
+
+print('Woyna Dega CART Producers Accuracy', test_accuracy.producersAccuracy());
+
+print('Woyna Dega CART Consumers Accuracy', test_accuracy.consumersAccuracy());
+
+// GTB Classification 
+var GTB_classifier = ee.Classifier.smileGradientTreeBoost(75,0.25, 1, null, null, 0).train(sample, label, bands);
+// Get information about the trained classifier.
+print('Woyna Dega GTB_Explanation', GTB_classifier.explain());
+
+// Classify the image with the same bands used for training.
+var GTB = sentinel_vi.classify(GTB_classifier);
+
+// Accuracy Assessment 
+var band = 'classification';
+// Overlay the points on the imagery to get training.
+var test = GTB.select(band).sampleRegions(
+    {'collection': wdegaValidation, 'properties':[label],'scale': 10}
+);
+
+var test_accuracy = test.errorMatrix('Cover', 'classification');
+print('Woyna Dega GTB Confusion Matrix', test_accuracy);
+
+print('Woyna Dega GTB Overall Accuracy', test_accuracy.accuracy());
+
+print('Woyna Dega GTB Kappa', test_accuracy.kappa());
+
+print('Woyna Dega GTB Producers Accuracy', test_accuracy.producersAccuracy());
+
+print('Woyna Dega GTB Consumers Accuracy', test_accuracy.consumersAccuracy());
+
+// RF Classification 
+var RF_classifier = ee.Classifier.smileRandomForest(200, 5, 1, 0.85, null, 0).train(sample, label, bands);
+// Get information about the trained classifier.
+print('Woyna Dega RF_Explanation', RF_classifier.explain());
+
+// Classify the image with the same bands used for training.
+var RF = sentinel_vi.classify(RF_classifier);
+
+// Accuracy Assessment 
+var band = 'classification';
+// Overlay the points on the imagery to get training.
+var test = RF.select(band).sampleRegions(
+    {'collection': validationGcp, 'properties':[label],'scale': 10}
+);
+
+var test_accuracy = test.errorMatrix('Cover', 'classification');
+print('Woyna Dega RF Confusion Matrix', test_accuracy);
+
+print('Woyna Dega RF Overall Accuracy', test_accuracy.accuracy());
+
+print('Woyna Dega RF Kappa', test_accuracy.kappa());
+
+print('Woyna Dega RF Producers Accuracy', test_accuracy.producersAccuracy());
+
+print('Woyna Dega RF Consumers Accuracy', test_accuracy.consumersAccuracy());
+
+// SVM Classification 
+var SVM_classifier = ee.Classifier.libsvm({cost: 295}).train(sample, label, bands);
+// Get information about the trained classifier.
+print('Woyna Dega SVM_Explanation', SVM_classifier.explain());
+
+// Classify the image with the same bands used for training.
+var SVM = sentinel_vi.classify(SVM_classifier);
+
+// Accuracy Assessment 
+var band = 'classification';
+// Overlay the points on the imagery to get training.
+var test = SVM.select(band).sampleRegions(
+    {'collection': validationGcp, 'properties':[label],'scale': 10}
+);
+
+var test_accuracy = test.errorMatrix('Cover', 'classification');
+print('Woyna Dega SVM Confusion Matrix', test_accuracy);
+
+print('Woyna Dega SVM Overall Accuracy', test_accuracy.accuracy());
+
+print('Woyna Dega SVM Kappa', test_accuracy.kappa());
+
+print('Woyna Dega SVM Producers Accuracy', test_accuracy.producersAccuracy());
+
+print('Woyna Dega SVM Consumers Accuracy', test_accuracy.consumersAccuracy());
+
+// 2. Dega
+// Overlay the points on the imagery to get training.
+var sample = sentinel_vi.sampleRegions(
+    {'collection': degaTraining, 'properties': [label], 'scale': 10}
+);
+
+// CART Classification 
+var CART_classifier = ee.Classifier.smileCart(40).train(sample, label, bands);
+// Get information about the trained classifier.
+print('Dega CART_Explanation', CART_classifier.explain());
+
+// Classify the image with the same bands used for training.
+var CART = sentinel_vi.classify(CART_classifier);
+
+// Accuracy Assessment 
+var band = 'classification';
+// Overlay the points on the imagery to get training.
+var test = CART.select(band).sampleRegions(
+    {'collection': validationGcp, 'properties':[label],'scale': 10}
+);
+
+var test_accuracy = test.errorMatrix('Cover', 'classification');
+print('Dega CART Confusion Matrix', test_accuracy);
+
+print('Dega CART Overall Accuracy', test_accuracy.accuracy());
+
+print('Dega CART Kappa', test_accuracy.kappa());
+
+print('Dega CART Producers Accuracy', test_accuracy.producersAccuracy());
+
+print('Dega CART Consumers Accuracy', test_accuracy.consumersAccuracy());
+
+// GTB Classification 
+var GTB_classifier = ee.Classifier.smileGradientTreeBoost(75,0.25, 1, null, null, 0).train(sample, label, bands);
+// Get information about the trained classifier.
+print('Dega GTB_Explanation', GTB_classifier.explain());
+
+// Classify the image with the same bands used for training.
+var GTB = sentinel_vi.classify(GTB_classifier);
+
+// Accuracy Assessment 
+var band = 'classification';
+// Overlay the points on the imagery to get training.
+var test = GTB.select(band).sampleRegions(
+    {'collection': validationGcp, 'properties':[label],'scale': 10}
+);
+
+var test_accuracy = test.errorMatrix('Cover', 'classification');
+print('Dega GTB Confusion Matrix', test_accuracy);
+
+print('Dega GTB Overall Accuracy', test_accuracy.accuracy());
+
+print('Dega GTB Kappa', test_accuracy.kappa());
+
+print('Dega GTB Producers Accuracy', test_accuracy.producersAccuracy());
+
+print('Dega GTB Consumers Accuracy', test_accuracy.consumersAccuracy());
+
+// RF Classification 
+var RF_classifier = ee.Classifier.smileRandomForest(200, 5, 1, 0.85, null, 0).train(sample, label, bands);
+// Get information about the trained classifier.
+print('Dega RF_Explanation', RF_classifier.explain());
+
+// Classify the image with the same bands used for training.
+var RF = sentinel_vi.classify(RF_classifier);
+
+// Accuracy Assessment 
+var band = 'classification';
+// Overlay the points on the imagery to get training.
+var test = RF.select(band).sampleRegions(
+    {'collection': degaValidation, 'properties':[label],'scale': 10}
+);
+
+var test_accuracy = test.errorMatrix('Cover', 'classification');
+print('Dega RF Confusion Matrix', test_accuracy);
+
+print('Dega RF Overall Accuracy', test_accuracy.accuracy());
+
+print('Dega RF Kappa', test_accuracy.kappa());
+
+print('Dega RF Producers Accuracy', test_accuracy.producersAccuracy());
+
+print('Dega RF Consumers Accuracy', test_accuracy.consumersAccuracy());
+
+// SVM Classification 
+var SVM_classifier = ee.Classifier.libsvm({cost: 295}).train(sample, label, bands);
+// Get information about the trained classifier.
+print('Dega SVM_Explanation', SVM_classifier.explain());
+
+// Classify the image with the same bands used for training.
+var SVM = sentinel_vi.classify(SVM_classifier);
+
+// Accuracy Assessment 
+var band = 'classification';
+// Overlay the points on the imagery to get training.
+var test = SVM.select(band).sampleRegions(
+    {'collection': validationGcp, 'properties':[label],'scale': 10}
+);
+
+var test_accuracy = test.errorMatrix('Cover', 'classification');
+print('Dega SVM Confusion Matrix', test_accuracy);
+
+print('Dega SVM Overall Accuracy', test_accuracy.accuracy());
+
+print('Dega SVM Kappa', test_accuracy.kappa());
+
+print('Dega SVM Producers Accuracy', test_accuracy.producersAccuracy());
+
+print('Dega SVM Consumers Accuracy', test_accuracy.consumersAccuracy());
